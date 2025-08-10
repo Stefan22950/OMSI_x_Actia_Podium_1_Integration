@@ -242,13 +242,21 @@ namespace OmsiVisualInterfaceNet
 
             coolantTemp = Math.Clamp(coolantTemp, 40, 120);
 
-            // Update coolant gauge
-            int width = (int)(8 + (coolantTemp - 40) * 645 / 80);
+            int width = (int)(3 + (coolantTemp - 40) * 323 / 80);
             coolantTempPanel.Width = width;
-            bool overheat = coolantTemp > 100;
-            if (overheat != lastOverheatState)
+            bool overheat = coolantTemp > 40;
+            bool STOPWarning = omsiManager.CurrentVehicle.GetVariable("Actia_DASH_Indic_STOP") > 0;
+            if (overheat != lastOverheatState && engineOn || (!STOPWarning && engineOn && overheat))
             {
-                serialManager.WriteLine($"ENGINE_ERROR_LIGHT_{(overheat ? "ON" : "OFF")}");
+                serialManager.WriteLine($"STOP_LIGHT_{(overheat ? "ON" : "OFF")}");
+                serialManager.WriteLine($"BUZZER_ON_900");
+                buzzerOn = true;
+                lastOverheatState = overheat;
+            }
+            else if (buzzerOn && !engineOn)
+            {
+                serialManager.WriteLine("BUZZER_OFF");
+                buzzerOn = false;
             }
         }
 
@@ -259,8 +267,8 @@ namespace OmsiVisualInterfaceNet
             double air1Level = Convert.ToDouble(omsiManager.CurrentVehicle.GetVariable("bremse_p_Tank01"));
             double air2Level = Convert.ToDouble(omsiManager.CurrentVehicle.GetVariable("bremse_p_Tank02"));
            
-            const int minWidth = 8;
-            const int maxWidth = 591;
+            const int minWidth = 3;
+            const int maxWidth = 296;
             const double maxPressure = 1200000;
 
             air1Level = Math.Clamp(air1Level, 0, maxPressure);
@@ -274,10 +282,10 @@ namespace OmsiVisualInterfaceNet
             pressure2Panel.Width = widthAir2;
 
             bool lowair = air1Level < 500000 || air2Level < 500000;
-            if (lowair != lastLowAirPressureState & engineOn)
+            if (lowair != lastLowAirPressureState && engineOn)
             {
                 serialManager.WriteLine($"STOP_LIGHT_{(lowair ? "ON" : "OFF")}");
-                serialManager.WriteLine($"BUZZER_ON_1000");
+                serialManager.WriteLine($"BUZZER_ON_900");
                 buzzerOn = true;
                 lastLowAirPressureState = lowair;
             }
@@ -296,8 +304,8 @@ namespace OmsiVisualInterfaceNet
             double fuelcapacity = Convert.ToDouble(omsiManager.fuelcapacity);
             double adblueLevel = Convert.ToDouble(omsiManager.CurrentVehicle.GetVariable("engine_adblue_content"));
 
-            const int minWidth = 8;
-            const int maxWidth = 638;
+            const int minWidth = 3;
+            const int maxWidth = 323;
 
             fuelLevel = Math.Clamp(fuelLevel, 0, fuelcapacity);
             double ratio = fuelLevel / fuelcapacity; // 0.0 to 1.0
@@ -538,9 +546,11 @@ namespace OmsiVisualInterfaceNet
                     break;
                 case "RETARDER_OFF_ON":
                     omsiManager.SetRetarderOff(true);
+                    screenManager.UpdateIcon("ms_retarderOff", true);
                     break;
                 case "RETARDER_OFF_OFF":
                     omsiManager.SetRetarderOff(false);
+                    screenManager.UpdateIcon("ms_retarderOff", false);
                     break;
                 case "SUSPENSION_UP_PRESSED":
                     omsiManager.SetSuspensionUp(true);
@@ -640,6 +650,7 @@ namespace OmsiVisualInterfaceNet
             serialManager.WriteLine("PARKING_BRAKE_LIGHT_OFF");
             serialManager.WriteLine("ABS_LIGHT_OFF");
             serialManager.WriteLine("WARNING_LIGHT_OFF");
+            serialManager.WriteLine("STOP_LIGHT_OFF");
             serialManager.WriteLine("NIGHT_LIGHT_OFF");
             serialManager.WriteLine("REVERSE_LIGHT_OFF");
             serialManager.WriteLine("NEUTRAL_LIGHT_OFF");

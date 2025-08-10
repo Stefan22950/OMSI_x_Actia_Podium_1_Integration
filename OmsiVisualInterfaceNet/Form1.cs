@@ -22,8 +22,6 @@ namespace OmsiVisualInterfaceNet
             InitializeManagers();
             SetupFormPosition();
             InitializeTimer();
-            this.Paint += Form1_Paint;
-
         }
 
         private void InitializeManagers()
@@ -65,9 +63,9 @@ namespace OmsiVisualInterfaceNet
         {
             this.FormBorderStyle = FormBorderStyle.None;
             this.TopMost = true;
-            this.ClientSize = new Size(803, 450);
+            this.ClientSize = new Size(402, 301);
             string targetScreenDeviceName = @"\\.\DISPLAY2";
-            Point desiredLocationOnScreen = new Point(710, 449);
+            Point desiredLocationOnScreen = new Point(354, 299);
 
             Screen? targetScreen = Screen.AllScreens
                 .FirstOrDefault(s => s.DeviceName.Equals(targetScreenDeviceName, StringComparison.OrdinalIgnoreCase));
@@ -87,7 +85,9 @@ namespace OmsiVisualInterfaceNet
             FuelScreen.Location = new Point(0, 0);
             PressureScreen.Location = new Point(0, 0);
             CoolantTemperatureScreen.Location = new Point(0, 0);
-            screenManager.Update();
+            screenManager.HideAllScreens();
+            this.TopMost = true;
+            //screenManager.Update();
             /*dimOverlay.Visible = true;
             SetDimmingLevel(1);*/
         }
@@ -126,14 +126,6 @@ namespace OmsiVisualInterfaceNet
         private void UpdateTimer_Tick(object sender, EventArgs e)
         {
             dashboardManager.UpdateNonCritical();
-        }
-
-        private void Form1_Paint(object sender, PaintEventArgs e)
-        {
-            // Flip the form upside down
-            e.Graphics.TranslateTransform(this.ClientSize.Width / 2, this.ClientSize.Height / 2);
-            e.Graphics.RotateTransform(180);
-            e.Graphics.TranslateTransform(-this.ClientSize.Width / 2, -this.ClientSize.Height / 2);
         }
 
         protected async void Form1_Load(object sender, EventArgs e)

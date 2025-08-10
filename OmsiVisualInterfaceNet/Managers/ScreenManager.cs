@@ -1,4 +1,4 @@
-﻿
+﻿using System.Drawing.Design;
 
 namespace OmsiVisualInterfaceNet.Managers
 {
@@ -29,17 +29,15 @@ namespace OmsiVisualInterfaceNet.Managers
 
         private readonly Dictionary<string, string> mainScreenIconsVariableToPictureBox = new()
         {
-            { "Actia_DISPLAY_ICO_brake", "ms_brake" },
-            { "Actia_DISPLAY_ICO_retarder", "ms_retarder" },
-            { "Actia_DISPLAY_ICO_ramp", "ms_ramp" },
+            //{ "Actia_DISPLAY_ICO_bremsehalte", "ms_brake" },
+            { "Actia_DISPLAY_ICO_Retarder", "ms_retarder" },
+            //{ "Actia_DISPLAY_ICO_ramp", "ms_ramp" },
             { "Actia_DISPLAY_ICO_DEV", "ms_dev" },
             { "Actia_DISPLAY_ICO_haltewunsch", "ms_busStop" },
-            { "Actia_DISPLAY_ICO_asr", "ms_asr" },
-            { "Actia_DISPLAY_ICO_SECU", "ms_secu" },
-            { "Actia_DISPLAY_ICO_Retarder", "ms_retarderOff" },
+            //{ "Actia_DISPLAY_ICO_asr", "ms_asr" },
+            { "Actia_DISPLAY_ICO_Secu", "ms_secu" },
             { "Actia_DISPLAY_ICO_AdBlue", "ms_adBlue" },
-            { "Actia_DISPLAY_ICO_fuel", "ms_fuel" },
-            { "Actia_DISPLAY_ICO_coolant", "ms_coolant" }
+            { "Actia_DISPLAY_ICO_fuel", "ms_fuel" }
         };
 
         public ScreenManager(Panel stopScreen, Panel mainScreen, Panel logoScreen,
@@ -120,7 +118,7 @@ namespace OmsiVisualInterfaceNet.Managers
             }
             else if (startupTimerSeconds > 12.0)
             {
-                ShowScreen(MainScreen);
+                ShowScreen(StopScreen);
                 SetAllIconsVisible(false);
                 startupSequenceActive = false;
                 return;
@@ -130,36 +128,38 @@ namespace OmsiVisualInterfaceNet.Managers
         public void Update()
         {    
 
-            if (modeGoTo >= 0)
+            /*if (modeGoTo >= 0)
             {
                 currentMode = modeGoTo;
                 modeGoTo = -1;
-            }
+            }*/
 
-            UpdateScreenVisibility();
+            //UpdateScreenVisibility();
         }
 
         public void ChangeMode(bool up)
         {
+            var currentMode = omsiManager.CurrentVehicle?.GetVariable("Actia_DISPLAY_mode");
+
             if (up)
             {
                 if (currentMode == 1.0)
-                    GoToMode(2.1);
+                    UpdateScreenVisibility(2.1);
                 else if (currentMode == 2.1)
-                    GoToMode(2.2);
+                    UpdateScreenVisibility(2.2);
                 else if (currentMode == 2.2)
-                    GoToMode(2.3);
+                    UpdateScreenVisibility(2.3);
                 else if (currentMode == 2.3)
-                    GoToMode(1.0);
+                    UpdateScreenVisibility(1.0);
             }
             else
             {
                 if (currentMode == 2.3)
-                    GoToMode(2.2);
+                    UpdateScreenVisibility(2.2);
                 else if (currentMode == 2.2)
-                    GoToMode(2.1);
+                    UpdateScreenVisibility(2.1);
                 else if (currentMode == 2.1)
-                    GoToMode(1.0);
+                    UpdateScreenVisibility(1.0);
             }
         }
 
@@ -168,9 +168,9 @@ namespace OmsiVisualInterfaceNet.Managers
             modeGoTo = mode;
         }
 
-        private void UpdateScreenVisibility()
+        private void UpdateScreenVisibility(double currentMode)
         {
-            HideAllScreens();
+            //HideAllScreens();
 
             if (currentMode == 1.0)
             {
@@ -179,8 +179,10 @@ namespace OmsiVisualInterfaceNet.Managers
             }
             else
             {
-                SetAllIconsVisible(false);
-                if (currentMode == 2.2)
+                //SetAllIconsVisible(false);
+                if (currentMode == 2.1)
+                    ShowScreen(PressureScreen);
+                else if (currentMode == 2.2)
                     ShowScreen(FuelScreen);
                 else if (currentMode == 2.3)
                     ShowScreen(CoolantTemperatureScreen);
@@ -198,7 +200,30 @@ namespace OmsiVisualInterfaceNet.Managers
                 if (iconPictureBoxes.TryGetValue(pbName, out var pb))
                 {
                     bool isActive = omsiManager.CurrentVehicle?.GetVariable(gameVar) > 0;
-                    pb.Visible = isActive;
+                    if (pb.InvokeRequired)
+                    {
+                        pb.Invoke(new Action(() => pb.Visible = isActive));
+                    }
+                    else
+                    {
+                        pb.Visible = isActive;
+                    }
+                }
+            }
+        }
+
+        public void UpdateIcon(string icon_name, bool active)
+        {
+
+            if ( iconPictureBoxes.TryGetValue(icon_name, out var pb))
+            {
+                if (pb.InvokeRequired)
+                {
+                    pb.Invoke(new Action(() => pb.Visible = active));
+                }
+                else
+                {
+                    pb.Visible = active;
                 }
             }
         }
@@ -206,13 +231,33 @@ namespace OmsiVisualInterfaceNet.Managers
         private void SetAllIconsVisible(bool visible)
         {
             foreach (var pb in iconPictureBoxes.Values)
-                pb.Visible = visible;
+            {
+                if (pb.InvokeRequired)
+                {
+                    pb.Invoke(new Action(() => pb.Visible = visible));
+                }
+                else
+                {
+                    pb.Visible = visible;
+                }
+            }
         }
 
         private void ShowScreen(Panel screen)
         {
-            screen.Show();
-            screen.BringToFront();
+            if (screen.InvokeRequired)
+            {
+                screen.Invoke(new Action(() => 
+                {
+                    screen.Show();
+                    screen.BringToFront();
+                }));
+            }
+            else
+            {
+                screen.Show();
+                screen.BringToFront();
+            }
         }
 
         public void HideAllScreens()

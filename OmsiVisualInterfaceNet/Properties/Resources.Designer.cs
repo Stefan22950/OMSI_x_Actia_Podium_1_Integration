@@ -163,6 +163,16 @@ namespace OmsiVisualInterfaceNet.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap ms_icon101 {
+            get {
+                object obj = ResourceManager.GetObject("ms_icon101", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap ms_icon11 {
             get {
                 object obj = ResourceManager.GetObject("ms_icon11", resourceCulture);
