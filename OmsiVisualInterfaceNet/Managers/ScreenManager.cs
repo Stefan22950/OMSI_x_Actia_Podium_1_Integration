@@ -1,4 +1,5 @@
-﻿using System.Drawing.Design;
+﻿using System.Diagnostics;
+using System.Drawing.Design;
 
 namespace OmsiVisualInterfaceNet.Managers
 {
@@ -10,6 +11,7 @@ namespace OmsiVisualInterfaceNet.Managers
         private readonly Panel FuelScreen;
         private readonly Panel PressureScreen;
         private readonly Panel CoolantTemperatureScreen;
+        private readonly List<Panel> allScreens;
         private readonly Dictionary<string, PictureBox> iconPictureBoxes;
         private readonly OmsiManager omsiManager;
         private readonly SerialManager serialManager;
@@ -36,8 +38,8 @@ namespace OmsiVisualInterfaceNet.Managers
             { "Actia_DISPLAY_ICO_haltewunsch", "ms_busStop" },
             //{ "Actia_DISPLAY_ICO_asr", "ms_asr" },
             { "Actia_DISPLAY_ICO_Secu", "ms_secu" },
-            { "Actia_DISPLAY_ICO_AdBlue", "ms_adBlue" },
-            { "Actia_DISPLAY_ICO_fuel", "ms_fuel" }
+            //{ "Actia_DISPLAY_ICO_AdBlue", "ms_adBlue" },
+            //{ "Actia_DISPLAY_ICO_fuel", "ms_fuel" }
         };
 
         public ScreenManager(Panel stopScreen, Panel mainScreen, Panel logoScreen,
@@ -57,10 +59,31 @@ namespace OmsiVisualInterfaceNet.Managers
             buzzerActive = false;
             lastBuzzerState = false;
 
+            allScreens = new List<Panel>
+            {
+                StopScreen,
+                MainScreen,
+                LogoScreen,
+                FuelScreen,
+                PressureScreen,
+                CoolantTemperatureScreen
+            };
+
             startupTimerTicker = new System.Windows.Forms.Timer();
             startupTimerTicker.Interval = 1000; 
-            startupTimerTicker.Tick += StartupTimerTicker_Tick; 
+            startupTimerTicker.Tick += StartupTimerTicker_Tick;
 
+        }
+
+        private async Task ReturnToMainAfterDelay()
+        {
+            Debug.WriteLine("Delay started");
+            await Task.Delay(5000);
+            Debug.WriteLine("Delay finished, returning to main screen");
+            if (omsiManager.GetMainScreen() == 1)
+                UpdateScreenVisibility(4.0);
+            else
+                UpdateScreenVisibility(1.0);
         }
 
         public void RestartStartupSequence()
@@ -74,6 +97,20 @@ namespace OmsiVisualInterfaceNet.Managers
             SetAllIconsVisible(false);
 
             startupTimerTicker.Start();
+        }
+
+        public void UpdateMainScreen()
+        {
+            if (omsiManager.GetMainScreen() == 1)
+            {
+                UpdateScreenVisibility(4.0);
+            }
+            else
+            {
+                UpdateScreenVisibility(1.0);
+                UpdateMainScreenIcons();
+            }
+            
         }
 
         private void StartupTimerTicker_Tick(object? sender, EventArgs e)
@@ -125,41 +162,68 @@ namespace OmsiVisualInterfaceNet.Managers
             }
         }
 
-        public void Update()
-        {    
-
-            /*if (modeGoTo >= 0)
-            {
-                currentMode = modeGoTo;
-                modeGoTo = -1;
-            }*/
-
-            //UpdateScreenVisibility();
-        }
-
-        public void ChangeMode(bool up)
+        public async void ChangeMode(bool up)
         {
-            var currentMode = omsiManager.CurrentVehicle?.GetVariable("Actia_DISPLAY_mode");
+            var currentMode = allScreens.FirstOrDefault(x => x.Visible==true);
 
             if (up)
             {
-                if (currentMode == 1.0)
+                if (currentMode == MainScreen || currentMode == StopScreen)
+                {
                     UpdateScreenVisibility(2.1);
-                else if (currentMode == 2.1)
+                    await ReturnToMainAfterDelay();
+                }
+                else if (currentMode == PressureScreen)
+                {
                     UpdateScreenVisibility(2.2);
-                else if (currentMode == 2.2)
+                    await ReturnToMainAfterDelay();
+                }
+                else if (currentMode == FuelScreen)
+                { 
                     UpdateScreenVisibility(2.3);
-                else if (currentMode == 2.3)
-                    UpdateScreenVisibility(1.0);
+                    await ReturnToMainAfterDelay();
+                }
+                else if (currentMode == CoolantTemperatureScreen)
+                {
+                    if (omsiManager.GetMainScreen() == 1)
+                    {
+                        UpdateScreenVisibility(4.0);
+                    }
+                    else
+                    {
+                        UpdateScreenVisibility(1.0);
+                    }
+                }
             }
             else
             {
-                if (currentMode == 2.3)
+                if (currentMode == MainScreen || currentMode == StopScreen)
+                {
+                    UpdateScreenVisibility(2.3);
+                    await ReturnToMainAfterDelay();
+                }
+                else if (currentMode == CoolantTemperatureScreen)
+                {
                     UpdateScreenVisibility(2.2);
-                else if (currentMode == 2.2)
+                    await ReturnToMainAfterDelay();
+                }
+                else if (currentMode == FuelScreen)
+                {
                     UpdateScreenVisibility(2.1);
-                else if (currentMode == 2.1)
-                    UpdateScreenVisibility(1.0);
+                    await ReturnToMainAfterDelay();
+                }
+                else if (currentMode == PressureScreen)
+                {
+                    if (omsiManager.GetMainScreen() == 1)
+                    {
+                        UpdateScreenVisibility(4.0);
+                    }
+                    else
+                    {
+                        UpdateScreenVisibility(1.0);
+                    }
+                }
+
             }
         }
 
@@ -174,24 +238,25 @@ namespace OmsiVisualInterfaceNet.Managers
 
             if (currentMode == 1.0)
             {
-                ShowScreen(MainScreen);
+                MakeScreenVisible(MainScreen);
                 UpdateMainScreenIcons();
             }
             else
             {
                 //SetAllIconsVisible(false);
                 if (currentMode == 2.1)
-                    ShowScreen(PressureScreen);
+                    MakeScreenVisible(PressureScreen);
                 else if (currentMode == 2.2)
-                    ShowScreen(FuelScreen);
+                    MakeScreenVisible(FuelScreen);
                 else if (currentMode == 2.3)
-                    ShowScreen(CoolantTemperatureScreen);
+                    MakeScreenVisible(CoolantTemperatureScreen);
                 else if (currentMode == 4.0)
-                    ShowScreen(StopScreen);
+                    MakeScreenVisible(StopScreen);
             }
+
         }
 
-        private void UpdateMainScreenIcons()
+        public void UpdateMainScreenIcons()
         {
             foreach (var kvp in mainScreenIconsVariableToPictureBox)
             {
@@ -258,6 +323,32 @@ namespace OmsiVisualInterfaceNet.Managers
                 screen.Show();
                 screen.BringToFront();
             }
+        }
+
+        private void MakeScreenVisible(Panel screen)
+        {
+            foreach (var s in allScreens)
+            {
+                if (s.InvokeRequired)
+                {
+                    s.Invoke(new Action(() => s.Visible = false));
+                }
+                else
+                {
+                    s.Visible = false;
+                }
+            }
+
+            if (screen.InvokeRequired)
+            {
+                screen.Invoke(new Action(() => screen.Visible = true));
+            }
+            else
+            {
+                screen.Visible = true;
+            }
+
+
         }
 
         public void HideAllScreens()

@@ -19,6 +19,7 @@ namespace OmsiVisualInterfaceNet
         private bool engineOn = false;
         private bool logoSequenceRunning = false;
         // UI Elements
+        private readonly Form form;
         private readonly Panel stopScreen;
         private readonly Panel mainScreen;
         private readonly Panel logoScreen;
@@ -55,6 +56,7 @@ namespace OmsiVisualInterfaceNet
         private string lastSerialCommand = null;
 
         public DashboardManager(
+            Form form,
             SerialManager serialManager,
             OmsiManager omsiManager,
             ScreenManager screenManager,
@@ -70,6 +72,7 @@ namespace OmsiVisualInterfaceNet
             Panel pressure2Panel,
             PictureBox ms_fuel)
         {
+            this.form = form;
             this.stopScreen = stopScreen;
             this.mainScreen = mainScreen;
             this.logoScreen = logoScreen;
@@ -146,8 +149,10 @@ namespace OmsiVisualInterfaceNet
             UpdateFuel();
             UpdateAirPressure();
             UpdateClusterLights();
+            UpdateDoorIndicators();
             omsiManager.Update();
-            
+            form.TopMost = true;
+            screenManager.UpdateMainScreenIcons();
         }
 
 
@@ -162,6 +167,7 @@ namespace OmsiVisualInterfaceNet
             {
                 serialManager.WriteLine("RPM:0");
                 serialManager.WriteLine("SPEED:0");
+                screenManager.HideAllScreens();
                 dashboardOn = false;
                 HandleVehicleChanged(omsiManager.CurrentVehicle);
             }
@@ -244,7 +250,7 @@ namespace OmsiVisualInterfaceNet
 
             int width = (int)(3 + (coolantTemp - 40) * 323 / 80);
             coolantTempPanel.Width = width;
-            bool overheat = coolantTemp > 40;
+            bool overheat = coolantTemp > 110;
             bool STOPWarning = omsiManager.CurrentVehicle.GetVariable("Actia_DASH_Indic_STOP") > 0;
             if (overheat != lastOverheatState && engineOn || (!STOPWarning && engineOn && overheat))
             {
@@ -326,12 +332,48 @@ namespace OmsiVisualInterfaceNet
             }
         }
 
+        private void UpdateDoorIndicators()
+        {
+            var halfDoor = omsiManager.GetHalfDoor();
+
+            for (int i = 0; i < 3; i++)
+            {
+                bool doorOpen = omsiManager.GetDoorState(i);
+                if(doorOpen && halfDoor && i==0)
+                {
+                    screenManager.UpdateIcon($"door1_halfClosed", false);
+                    screenManager.UpdateIcon($"door1_opened", false);
+                    screenManager.UpdateIcon($"door1_closed", false);
+                    screenManager.UpdateIcon($"door1_halfOpened", true);
+
+                }
+                else if(!doorOpen && halfDoor && i==0)
+                {
+                    screenManager.UpdateIcon($"door1_halfOpened", false);
+                    screenManager.UpdateIcon($"door1_opened", false);
+                    screenManager.UpdateIcon($"door1_closed", false);
+                    screenManager.UpdateIcon($"door1_halfClosed", true);
+                }
+                else if (doorOpen && !halfDoor)
+                {
+                    screenManager.UpdateIcon($"door1_halfClosed", false);
+                    screenManager.UpdateIcon($"door1_halfOpened", false);
+                    screenManager.UpdateIcon($"door{i + 1}_closed", false);
+                    screenManager.UpdateIcon($"door{i + 1}_opened", true);
+                }
+                else
+                {
+                    screenManager.UpdateIcon($"door{i + 1}_opened", false);
+                    screenManager.UpdateIcon($"door{i + 1}_closed", true);
+                }
+
+            }
+        }
+
         private void UpdateClusterLights()
         {
             if (serialManager == null || omsiManager.CurrentVehicle == null) 
                 return;
-
-
 
             bool nightLight = omsiManager.GetLightSwitch() >0 ;
             if (nightLight != lastNightLightState)
@@ -361,6 +403,7 @@ namespace OmsiVisualInterfaceNet
             if (parkingBrake != lastParkingBrakeState)
             {
                 serialManager.WriteLine($"PARKING_BRAKE_LIGHT_{(parkingBrake ? "ON" : "OFF")}");
+                screenManager.UpdateMainScreen();
                 lastParkingBrakeState = parkingBrake;
             }
 
@@ -521,12 +564,15 @@ namespace OmsiVisualInterfaceNet
                 // Door controls
                 case "DOOR_1_PRESSED":
                     omsiManager.SetDoorButton(0, true);
+                    screenManager.UpdateMainScreen();
                     break;
                 case "DOOR_2_PRESSED":
                     omsiManager.SetDoorButton(1, true);
+                    screenManager.UpdateMainScreen();
                     break;
                 case "DOOR_3_PRESSED":
                     omsiManager.SetDoorButton(2, true);
+                    screenManager.UpdateMainScreen();
                     break;
                 case "AUTO_DOOR_ON":
                     omsiManager.SetAutoDoors(true);
@@ -572,9 +618,11 @@ namespace OmsiVisualInterfaceNet
                     break;
                 case "STATION_STOP_ON":
                     omsiManager.SetStopBrake(true);
+                    screenManager.UpdateMainScreen();
                     break;
                 case "STATION_STOP_OFF":
                     omsiManager.SetStopBrake(false);
+                    screenManager.UpdateMainScreen();
                     break;
                 // Actia display controls
                 case "SCREEN_UP_PRESSED":

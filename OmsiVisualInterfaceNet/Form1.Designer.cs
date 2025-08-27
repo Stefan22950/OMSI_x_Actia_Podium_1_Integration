@@ -29,6 +29,16 @@
         private void InitializeComponent()
         {
             StopScreen = new Panel();
+            frontWheel_block = new PictureBox();
+            backWheel_block = new PictureBox();
+            door1_halfOpened = new PictureBox();
+            door1_halfClosed = new PictureBox();
+            door1_opened = new PictureBox();
+            door1_closed = new PictureBox();
+            door2_opened = new PictureBox();
+            door3_opened = new PictureBox();
+            door3_closed = new PictureBox();
+            door2_closed = new PictureBox();
             Warning = new Label();
             pictureBox1 = new PictureBox();
             MainScreen = new Panel();
@@ -58,6 +68,16 @@
             pressure_1 = new Panel();
             pictureBox6 = new PictureBox();
             StopScreen.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)frontWheel_block).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)backWheel_block).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)door1_halfOpened).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)door1_halfClosed).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)door1_opened).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)door1_closed).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)door2_opened).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)door3_opened).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)door3_closed).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)door2_closed).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             MainScreen.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)ms_asr).BeginInit();
@@ -84,19 +104,139 @@
             // 
             // StopScreen
             // 
+            StopScreen.Controls.Add(frontWheel_block);
+            StopScreen.Controls.Add(backWheel_block);
+            StopScreen.Controls.Add(door1_halfOpened);
+            StopScreen.Controls.Add(door1_halfClosed);
+            StopScreen.Controls.Add(door1_opened);
+            StopScreen.Controls.Add(door1_closed);
+            StopScreen.Controls.Add(door2_opened);
+            StopScreen.Controls.Add(door3_opened);
+            StopScreen.Controls.Add(door3_closed);
+            StopScreen.Controls.Add(door2_closed);
             StopScreen.Controls.Add(Warning);
             StopScreen.Controls.Add(pictureBox1);
-            StopScreen.Location = new Point(1124, 343);
+            StopScreen.Location = new Point(295, 30);
             StopScreen.Name = "StopScreen";
             StopScreen.Size = new Size(402, 301);
             StopScreen.TabIndex = 0;
+            // 
+            // frontWheel_block
+            // 
+            frontWheel_block.BackColor = Color.FromArgb(216, 140, 43);
+            frontWheel_block.Image = Properties.Resources.wheels_lock;
+            frontWheel_block.Location = new Point(238, 97);
+            frontWheel_block.Name = "frontWheel_block";
+            frontWheel_block.Size = new Size(24, 24);
+            frontWheel_block.SizeMode = PictureBoxSizeMode.Zoom;
+            frontWheel_block.TabIndex = 15;
+            frontWheel_block.TabStop = false;
+            // 
+            // backWheel_block
+            // 
+            backWheel_block.BackColor = Color.FromArgb(216, 140, 43);
+            backWheel_block.Image = Properties.Resources.wheels_lock;
+            backWheel_block.Location = new Point(133, 97);
+            backWheel_block.Name = "backWheel_block";
+            backWheel_block.Size = new Size(24, 24);
+            backWheel_block.SizeMode = PictureBoxSizeMode.Zoom;
+            backWheel_block.TabIndex = 14;
+            backWheel_block.TabStop = false;
+            // 
+            // door1_halfOpened
+            // 
+            door1_halfOpened.BackColor = Color.FromArgb(216, 140, 43);
+            door1_halfOpened.Image = Properties.Resources.door1_halfOpened;
+            door1_halfOpened.Location = new Point(262, 47);
+            door1_halfOpened.Name = "door1_halfOpened";
+            door1_halfOpened.Size = new Size(39, 61);
+            door1_halfOpened.SizeMode = PictureBoxSizeMode.Zoom;
+            door1_halfOpened.TabIndex = 13;
+            door1_halfOpened.TabStop = false;
+            // 
+            // door1_halfClosed
+            // 
+            door1_halfClosed.BackColor = Color.FromArgb(216, 140, 43);
+            door1_halfClosed.Image = Properties.Resources.door1_halfClosed;
+            door1_halfClosed.Location = new Point(262, 47);
+            door1_halfClosed.Name = "door1_halfClosed";
+            door1_halfClosed.Size = new Size(39, 61);
+            door1_halfClosed.SizeMode = PictureBoxSizeMode.Zoom;
+            door1_halfClosed.TabIndex = 12;
+            door1_halfClosed.TabStop = false;
+            // 
+            // door1_opened
+            // 
+            door1_opened.BackColor = Color.FromArgb(216, 140, 43);
+            door1_opened.Image = Properties.Resources.door2345_opened;
+            door1_opened.Location = new Point(262, 47);
+            door1_opened.Name = "door1_opened";
+            door1_opened.Size = new Size(39, 61);
+            door1_opened.SizeMode = PictureBoxSizeMode.Zoom;
+            door1_opened.TabIndex = 11;
+            door1_opened.TabStop = false;
+            // 
+            // door1_closed
+            // 
+            door1_closed.BackColor = Color.FromArgb(216, 140, 43);
+            door1_closed.Image = Properties.Resources.door2345_closed;
+            door1_closed.Location = new Point(262, 47);
+            door1_closed.Name = "door1_closed";
+            door1_closed.Size = new Size(39, 61);
+            door1_closed.SizeMode = PictureBoxSizeMode.Zoom;
+            door1_closed.TabIndex = 10;
+            door1_closed.TabStop = false;
+            // 
+            // door2_opened
+            // 
+            door2_opened.BackColor = Color.FromArgb(216, 140, 43);
+            door2_opened.Image = Properties.Resources.door2345_opened;
+            door2_opened.Location = new Point(177, 47);
+            door2_opened.Name = "door2_opened";
+            door2_opened.Size = new Size(39, 61);
+            door2_opened.SizeMode = PictureBoxSizeMode.Zoom;
+            door2_opened.TabIndex = 9;
+            door2_opened.TabStop = false;
+            // 
+            // door3_opened
+            // 
+            door3_opened.BackColor = Color.FromArgb(216, 140, 43);
+            door3_opened.Image = Properties.Resources.door2345_opened;
+            door3_opened.Location = new Point(84, 47);
+            door3_opened.Name = "door3_opened";
+            door3_opened.Size = new Size(39, 61);
+            door3_opened.SizeMode = PictureBoxSizeMode.Zoom;
+            door3_opened.TabIndex = 8;
+            door3_opened.TabStop = false;
+            // 
+            // door3_closed
+            // 
+            door3_closed.BackColor = Color.FromArgb(216, 140, 43);
+            door3_closed.Image = Properties.Resources.door2345_closed;
+            door3_closed.Location = new Point(84, 47);
+            door3_closed.Name = "door3_closed";
+            door3_closed.Size = new Size(39, 61);
+            door3_closed.SizeMode = PictureBoxSizeMode.Zoom;
+            door3_closed.TabIndex = 7;
+            door3_closed.TabStop = false;
+            // 
+            // door2_closed
+            // 
+            door2_closed.BackColor = Color.FromArgb(216, 140, 43);
+            door2_closed.Image = Properties.Resources.door2345_closed;
+            door2_closed.Location = new Point(177, 47);
+            door2_closed.Name = "door2_closed";
+            door2_closed.Size = new Size(39, 61);
+            door2_closed.SizeMode = PictureBoxSizeMode.Zoom;
+            door2_closed.TabIndex = 6;
+            door2_closed.TabStop = false;
             // 
             // Warning
             // 
             Warning.AutoSize = true;
             Warning.BackColor = Color.FromArgb(216, 140, 43);
             Warning.Font = new Font("Segoe UI", 10.2F, FontStyle.Bold, GraphicsUnit.Point);
-            Warning.Location = new Point(12, 127);
+            Warning.Location = new Point(13, 126);
             Warning.Name = "Warning";
             Warning.Size = new Size(59, 23);
             Warning.TabIndex = 1;
@@ -127,7 +267,7 @@
             MainScreen.Controls.Add(ms_busStop);
             MainScreen.Controls.Add(ms_brake);
             MainScreen.Controls.Add(pictureBox2);
-            MainScreen.Location = new Point(279, 27);
+            MainScreen.Location = new Point(1121, 365);
             MainScreen.Name = "MainScreen";
             MainScreen.Size = new Size(402, 301);
             MainScreen.TabIndex = 1;
@@ -404,6 +544,16 @@
             Load += Form1_Load;
             StopScreen.ResumeLayout(false);
             StopScreen.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)frontWheel_block).EndInit();
+            ((System.ComponentModel.ISupportInitialize)backWheel_block).EndInit();
+            ((System.ComponentModel.ISupportInitialize)door1_halfOpened).EndInit();
+            ((System.ComponentModel.ISupportInitialize)door1_halfClosed).EndInit();
+            ((System.ComponentModel.ISupportInitialize)door1_opened).EndInit();
+            ((System.ComponentModel.ISupportInitialize)door1_closed).EndInit();
+            ((System.ComponentModel.ISupportInitialize)door2_opened).EndInit();
+            ((System.ComponentModel.ISupportInitialize)door3_opened).EndInit();
+            ((System.ComponentModel.ISupportInitialize)door3_closed).EndInit();
+            ((System.ComponentModel.ISupportInitialize)door2_closed).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             MainScreen.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)ms_asr).EndInit();
@@ -460,5 +610,15 @@
         private Panel pressure_2;
         private Panel pressure_1;
         private PictureBox pictureBox6;
+        private PictureBox door2_closed;
+        private PictureBox door3_closed;
+        private PictureBox door2_opened;
+        private PictureBox door3_opened;
+        private PictureBox door1_opened;
+        private PictureBox door1_closed;
+        private PictureBox door1_halfOpened;
+        private PictureBox door1_halfClosed;
+        private PictureBox frontWheel_block;
+        private PictureBox backWheel_block;
     }
 }

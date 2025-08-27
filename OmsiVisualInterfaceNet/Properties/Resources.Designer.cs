@@ -143,6 +143,96 @@ namespace OmsiVisualInterfaceNet.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap door0 {
+            get {
+                object obj = ResourceManager.GetObject("door0", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap door0_blocked {
+            get {
+                object obj = ResourceManager.GetObject("door0_blocked", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap door0_opened {
+            get {
+                object obj = ResourceManager.GetObject("door0_opened", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap door01 {
+            get {
+                object obj = ResourceManager.GetObject("door01", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap door1_halfClosed {
+            get {
+                object obj = ResourceManager.GetObject("door1_halfClosed", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap door1_halfOpened {
+            get {
+                object obj = ResourceManager.GetObject("door1_halfOpened", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap door1_opened {
+            get {
+                object obj = ResourceManager.GetObject("door1_opened", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap door2345_closed {
+            get {
+                object obj = ResourceManager.GetObject("door2345_closed", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap door2345_opened {
+            get {
+                object obj = ResourceManager.GetObject("door2345_opened", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap ms_icon1 {
             get {
                 object obj = ResourceManager.GetObject("ms_icon1", resourceCulture);
@@ -256,6 +346,16 @@ namespace OmsiVisualInterfaceNet.Properties {
         internal static System.Drawing.Bitmap ms_icon9 {
             get {
                 object obj = ResourceManager.GetObject("ms_icon9", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap wheels_lock {
+            get {
+                object obj = ResourceManager.GetObject("wheels_lock", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

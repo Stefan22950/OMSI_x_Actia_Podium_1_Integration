@@ -1,6 +1,6 @@
 using OmsiVisualInterfaceNet.Managers;
-
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 
 namespace OmsiVisualInterfaceNet
 {
@@ -16,12 +16,32 @@ namespace OmsiVisualInterfaceNet
         private System.Windows.Forms.Timer criticalUpdateTimer;
         private Panel dimOverlay;
 
+        // Add these Win32 imports at the top of your class
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint TOPMOST_FLAGS = SWP_NOMOVE | SWP_NOSIZE;
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
         public Form1()
         {
             InitializeComponent();
             InitializeManagers();
             SetupFormPosition();
             InitializeTimer();
+
+            // Set extended window style to be always on top
+            this.TopMost = true;
+            ForceToForeground();
+        }
+
+        private void ForceToForeground()
+        {
+            // Force window to top-most position
+            SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, TOPMOST_FLAGS);
         }
 
         private void InitializeManagers()
@@ -42,12 +62,22 @@ namespace OmsiVisualInterfaceNet
                 { "ms_retarderOff", ms_retarderOff },
                 { "ms_adBlue", ms_adBlue },
                 { "ms_fuel", ms_fuel },
-                { "ms_coolant", ms_coolant }
+                { "ms_coolant", ms_coolant },
+                { "door1_halfClosed", door1_halfClosed },
+                { "door1_halfOpened", door1_halfOpened },
+                { "door1_closed", door1_closed },
+                { "door1_opened", door1_opened },
+                { "door2_closed", door2_closed },
+                { "door2_opened", door2_opened },
+                { "door3_closed", door3_closed },
+                { "door3_opened", door3_opened },
+                { "backWheel_block", backWheel_block },
+                { "frontWheel_block", frontWheel_block }
             };
 
-            screenManager = new ScreenManager(StopScreen, MainScreen, LogoScreen, FuelScreen, CoolantTemperatureScreen, PressureScreen, iconPictureBoxes, omsiManager,serialManager);
+            screenManager = new ScreenManager(StopScreen, MainScreen, LogoScreen, FuelScreen, CoolantTemperatureScreen, PressureScreen, iconPictureBoxes, omsiManager, serialManager);
 
-            dashboardManager = new DashboardManager(serialManager, omsiManager, screenManager,constantsManager,
+            dashboardManager = new DashboardManager(this, serialManager, omsiManager, screenManager, constantsManager,
                                          StopScreen, MainScreen, LogoScreen, Warning, coolant_temp, fuel, adblue, pressure_1, pressure_2, ms_fuel);
 
 
@@ -105,6 +135,19 @@ namespace OmsiVisualInterfaceNet
             updateTimer.Interval = 32; // ~30Hz
             updateTimer.Tick += UpdateTimer_Tick;
             updateTimer.Start();
+
+            // Add a new timer specifically for ensuring top-most status
+            System.Windows.Forms.Timer topMostTimer = new System.Windows.Forms.Timer();
+            topMostTimer.Interval = 1000; // Check every second
+            topMostTimer.Tick += (s, e) =>
+            {
+                if (!this.TopMost)
+                {
+                    this.TopMost = true;
+                    ForceToForeground();
+                }
+            };
+            topMostTimer.Start();
         }
 
         /*private void AddDimOverlay()
@@ -128,10 +171,24 @@ namespace OmsiVisualInterfaceNet
             dashboardManager.UpdateNonCritical();
         }
 
+        // Override ShowInTaskbar to prevent the taskbar from showing the window
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.ExStyle |= 0x00000008; // WS_EX_TOPMOST
+                return cp;
+            }
+        }
+
         protected async void Form1_Load(object sender, EventArgs e)
         {
             await omsiManager.Initialize();
             await InitializeSerialConnection();
+
+            // Add this
+            ForceToForeground();
         }
 
         private async Task InitializeSerialConnection()

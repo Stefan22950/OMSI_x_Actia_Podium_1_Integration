@@ -26,6 +26,7 @@ namespace OmsiVisualInterfaceNet
         private bool lastHighBeamState =false;
         private bool nightLightState;
         private bool[] lastDoorStates = new bool[3];
+        private bool stopBrakeState = false;
         private bool highBeamIntent = false;
         public string vehicleName;
         public double fuelcapacity;
@@ -144,7 +145,8 @@ namespace OmsiVisualInterfaceNet
 
                     if (doorOpen)
                     {
-                        serialManager.WriteLine($"DOOR{i+1}_ON");
+                        serialManager.WriteLine($"DOOR{i+1}_ON"); 
+                        
                     }
                     else
                     {
@@ -161,7 +163,7 @@ namespace OmsiVisualInterfaceNet
             
         }
 
-
+        
         public double GetSpeed() => CurrentVehicle?.Tacho ?? 0;
         public double GetRPM() => CurrentVehicle == null ? 0 : Convert.ToDouble(CurrentVehicle.GetVariable("engine_n"));
         public bool GetElectricState() => CurrentVehicle == null ? false : Convert.ToBoolean(CurrentVehicle.GetVariable("elec_busbar_main"));
@@ -197,9 +199,20 @@ namespace OmsiVisualInterfaceNet
              return CurrentVehicle.GetVariable("cp_schluessel_rot");
 
         } 
+
+        public int GetMainScreen()
+        {
+            bool doorOpen = GetDoorState(0) || GetDoorState(1) || GetDoorState(2);
+            bool parkingBrake = CurrentVehicle?.GetVariable("Actia_DASH_Indic_parkingbrake")>0;
+            if (stopBrakeState == true || parkingBrake == true || (doorOpen==true && GetSpeed()<1))
+                return 1;
+            return 0;
+        }
         public int GetGearState() => CurrentVehicle == null ? 0 :
             Convert.ToBoolean(CurrentVehicle.GetVariable("cockpit_gangR")) ? -1 :
             Convert.ToBoolean(CurrentVehicle.GetVariable("cockpit_gang1")) ? 1 : 0;
+
+        public bool GetHalfDoor() => Convert.ToBoolean(CurrentVehicle?.GetVariable("Actia_BTN_door0_block"));
 
         public double GetVariable(string v) => CurrentVehicle == null ? 0 : Convert.ToDouble(CurrentVehicle.GetVariable(v));
 
@@ -233,18 +246,14 @@ namespace OmsiVisualInterfaceNet
         public void SetDevMode() => CurrentVehicle?.SetTrigger("CG_active",true);
         public void SetAutoDoors(bool on) => CurrentVehicle?.SetVariable("door_DISABLED_Req", on ? 0 : 1);
         public void SetHalfDoor(bool on) => CurrentVehicle?.SetVariable("Actia_BTN_door0_block", on ? 1 : 0);
-
+        
         public void SetPressurization(bool on) => CurrentVehicle?.SetVariable("pressurizePin", on ? 1 : 0);
         public void SetStopBrake(bool on)  
         {
             if(on==true)
                 CurrentVehicle?.SetVariable("bremse_halte_sw", 0);
             CurrentVehicle?.SetTrigger("bus_dooraft", true);
-        }
-
-        public void ActivateDriveTrigger()
-        {
-            CurrentVehicle?.SetTrigger("automatic_D", true);
+            stopBrakeState = on;
         }
 
         public void SetDoorButton(int door, bool pressed)
