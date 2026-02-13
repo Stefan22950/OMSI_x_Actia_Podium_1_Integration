@@ -1,10 +1,8 @@
 ﻿using RJCP.IO.Ports;
 
-using System;
 using System.Diagnostics;
-using System.Threading;
 
-namespace OmsiVisualInterfaceNet
+namespace OmsiVisualInterfaceNet.Managers
 {
     public class SerialManager : IDisposable
     {
@@ -18,13 +16,10 @@ namespace OmsiVisualInterfaceNet
         {
             port = new SerialPortStream(portName, baudRate);
             port.Close();
-            // Add these optimizations
             port.WriteBufferSize = 1024;
             port.ReadBufferSize = 1024;
-            //port.LatencyTime = 1; // Minimum latency
             port.ReceivedBytesThreshold = 1;
             port.Open();
-            //FlushAndResetArduino();
             WaitForArduinoReady();            
             StartReading();
 
@@ -32,14 +27,12 @@ namespace OmsiVisualInterfaceNet
 
         public async Task WaitForBootSequence()
         {
-            // Wait for boot sequence to complete
-            await Task.Delay(1500); // Adjust timing as needed
+            await Task.Delay(1500);
             FlushAndResetArduino();
         }
 
         public void FlushAndResetArduino()
         {
-            // Clear any pending messages
             if (port != null && port.IsOpen)
             {
                 port.DiscardInBuffer();
@@ -82,7 +75,7 @@ namespace OmsiVisualInterfaceNet
                     if (port.BytesToRead > 0)
                     {
                         string input = port.ReadLine().Trim();
-                        Debug.WriteLine($"[RX] {input}"); // Log incoming message
+                        Debug.WriteLine($"[RX] {input}");
                         OnDataReceived?.Invoke(input);
                     }
                     else
@@ -101,7 +94,7 @@ namespace OmsiVisualInterfaceNet
         {
             try
             {
-                Debug.WriteLine($"[TX] {message}"); // Log outgoing message
+                Debug.WriteLine($"[TX] {message}");
                 port.WriteLine(message);
                 port.Flush();
             }
@@ -111,13 +104,12 @@ namespace OmsiVisualInterfaceNet
             }
         }
 
-        // Add this method to prioritize speed/RPM updates
         public void WriteHighPriority(string message)
         {
             try 
             {
                 port.Write(message + "\n");
-                port.Flush(); // Immediate flush for high-priority updates
+                port.Flush();
             }
             catch (Exception ex)
             {

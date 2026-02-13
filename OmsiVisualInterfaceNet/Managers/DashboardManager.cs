@@ -2,11 +2,6 @@
 
 using OmsiVisualInterfaceNet.Managers;
 
-using System;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-
 namespace OmsiVisualInterfaceNet
 {
     public class DashboardManager
@@ -18,7 +13,6 @@ namespace OmsiVisualInterfaceNet
         private bool dashboardOn = false;
         private bool engineOn = false;
         private bool logoSequenceRunning = false;
-        // UI Elements
         private readonly Form form;
         private readonly Panel stopScreen;
         private readonly Panel mainScreen;
@@ -88,7 +82,6 @@ namespace OmsiVisualInterfaceNet
             this.pressure2Panel = pressure2Panel;
             this.ms_fuel = ms_fuel;
 
-            // Modify the serial event handler to handle boot sequence
             serialManager.OnDataReceived += async (data) => await HandleSerialInput(data);
         }
 
@@ -144,7 +137,6 @@ namespace OmsiVisualInterfaceNet
             UpdatePowerState(omsiManager.GetElectricState());
             UpdateBlinkerState();
             UpdateHazardLights();
-            UpdateGearIndicator();
             UpdateCoolantTemperature();
             UpdateFuel();
             UpdateAirPressure();
@@ -167,7 +159,6 @@ namespace OmsiVisualInterfaceNet
             {
                 serialManager.WriteLine("RPM:0");
                 serialManager.WriteLine("SPEED:0");
-                screenManager.HideAllScreens();
                 dashboardOn = false;
                 HandleVehicleChanged(omsiManager.CurrentVehicle);
             }
@@ -222,22 +213,6 @@ namespace OmsiVisualInterfaceNet
                     }
                 }
                 lastHazardsState = hazardsOn;
-            }
-        }
-
-        private void UpdateGearIndicator()
-        {
-            int gear = omsiManager.GetGearState();
-            if (gear != lastGearState)
-            {
-                serialManager.WriteLine($"GEAR:{(gear == -1 ? "R" : gear == 0 ? "N" : "D")}");
-
-                // Update gear indicator lights
-                serialManager.WriteLine(gear == -1 ? "REVERSE_LIGHT_ON" : "REVERSE_LIGHT_OFF");
-                serialManager.WriteLine(gear == 0 ? "NEUTRAL_LIGHT_ON" : "NEUTRAL_LIGHT_OFF");
-                serialManager.WriteLine(gear == 1 ? "DRIVE_LIGHT_ON" : "DRIVE_LIGHT_OFF");
-
-                lastGearState = gear;
             }
         }
 
@@ -314,7 +289,7 @@ namespace OmsiVisualInterfaceNet
             const int maxWidth = 323;
 
             fuelLevel = Math.Clamp(fuelLevel, 0, fuelcapacity);
-            double ratio = fuelLevel / fuelcapacity; // 0.0 to 1.0
+            double ratio = fuelLevel / fuelcapacity;
             int widthfuel = (int)(minWidth + ratio * (maxWidth - minWidth));
             fuelPanel.Width = widthfuel;
 
@@ -322,7 +297,6 @@ namespace OmsiVisualInterfaceNet
             int widthadblue = (int)(minWidth + adblueLevel * (maxWidth - minWidth));
             adbluePanel.Width = widthadblue;
 
-            // Update low fuel warning light only if state changes
             bool lowFuel = fuelLevel < 0.2;
             ms_fuel.Visible = lowFuel;
             if (lowFuel != lastLowFuelState)
@@ -516,16 +490,19 @@ namespace OmsiVisualInterfaceNet
                     omsiManager.SetBackFog(false);
                     break;
 
-                // Blinkers and hazards
-                /*case "BLINKER_LEFT_ON":
-                    omsiManager.SetBlinkerState(1);
+                // Blinkers
+                case "BLINKER_LEFT_ON":
+                    omsiManager.SetBlinkers(true,false);
                     break;
                 case "BLINKER_RIGHT_ON":
-                    omsiManager.SetBlinkerState(2);
+                    omsiManager.SetBlinkers(false,true);
                     break;
-                case "BLINKER_OFF":
-                    omsiManager.SetBlinkerState(0);
-                    break;*/
+                case "BLINKER_LEFT_OFF":
+                    omsiManager.SetBlinkers(false,false);
+                    break;
+                case "BLINKER_RIGHT_OFF":
+                    omsiManager.SetBlinkers(false, false);
+                    break;
                 case "HAZARDS_BTN_ON":
                     omsiManager.SetHazards(true);
                     break;
@@ -586,7 +563,8 @@ namespace OmsiVisualInterfaceNet
                 case "HALF_DOOR_ON":
                     omsiManager.SetHalfDoor(true);
                     break;
-                // Special functions
+
+                // Other functions
                 case "HEATING_PRESSED":
                     omsiManager.SetHeating(true);
                     break;
@@ -653,7 +631,6 @@ namespace OmsiVisualInterfaceNet
 
         private void HandleVehicleChanged(OmsiRoadVehicleInst vehicle)
         {
-            // Reset states when vehicle changes
             dashboardOn = false;
             logoSequenceRunning = false;
             lastBlinkerState = 0;
@@ -677,11 +654,8 @@ namespace OmsiVisualInterfaceNet
             engineOn = false;
             screenManager.startupTimerTicker.Stop();
             screenManager.HideAllScreens();
-
-
             Array.Fill(lastDoorStates, false);
 
-            // Reset all dashboard lights
             for (int i = 0; i < 3; i++)
             {
                 serialManager.WriteLine($"DOOR_LIGHT_{i}:OFF");
@@ -703,8 +677,6 @@ namespace OmsiVisualInterfaceNet
             serialManager.WriteLine("REVERSE_LIGHT_OFF");
             serialManager.WriteLine("NEUTRAL_LIGHT_OFF");
             serialManager.WriteLine("DRIVE_LIGHT_OFF");
-
-            // Reset gauges
             serialManager.WriteLine("SPEED:0");
             serialManager.WriteLine("RPM:0");
         }

@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Drawing.Design;
 
 namespace OmsiVisualInterfaceNet.Managers
 {
@@ -21,13 +20,6 @@ namespace OmsiVisualInterfaceNet.Managers
         private bool startupSequenceActive = true;
         private bool buzzerActive = false;
         private bool lastBuzzerState = false;
-
-
-        private double currentMode = 0.0;
-        private double modeGoTo = -1;
-        private bool isInitCheck = false;
-        private double startupTimer = 0;
-        private double backlight = 0;
 
         private readonly Dictionary<string, string> mainScreenIconsVariableToPictureBox = new()
         {
@@ -225,11 +217,6 @@ namespace OmsiVisualInterfaceNet.Managers
                 }
 
             }
-        }
-
-        private void GoToMode(double mode)
-        {
-            modeGoTo = mode;
         }
 
         private void UpdateScreenVisibility(double currentMode)

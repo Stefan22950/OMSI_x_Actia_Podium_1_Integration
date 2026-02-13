@@ -1,14 +1,8 @@
 ﻿using OmsiHook;
 
-using OmsiVisualInterfaceNet.Managers;
-
-using System;
-using System.Drawing.Design;
-using System.Threading.Tasks;
-
-namespace OmsiVisualInterfaceNet
+namespace OmsiVisualInterfaceNet.Managers
 {
-    public class OmsiManager : IDisposable
+    public class OmsiManager : IDisposable, IOmsiManager
     {
         private readonly OmsiHook.OmsiHook omsi;
         private readonly SerialManager serialManager;
@@ -23,12 +17,12 @@ namespace OmsiVisualInterfaceNet
         private bool lastHazardsState;
         private int lastGearState;
         private bool lastnightLightState;
-        private bool lastHighBeamState =false;
+        private bool lastHighBeamState = false;
         private bool nightLightState;
         private bool[] lastDoorStates = new bool[3];
         private bool stopBrakeState = false;
         private bool highBeamIntent = false;
-        public string vehicleName;
+        public string vehicleName { get; set; }
         public double fuelcapacity;
 
         public OmsiManager(SerialManager SerialManager, bool EnableLogging)
@@ -38,7 +32,6 @@ namespace OmsiVisualInterfaceNet
             enableLogging = EnableLogging;
             omsi = new OmsiHook.OmsiHook();
 
-            // Setup logging
             if (enableLogging)
             {
                 logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "serial_comms.log");
@@ -80,7 +73,7 @@ namespace OmsiVisualInterfaceNet
             vehicleName = CurrentVehicle?.RoadVehicle?.FileName ?? "No vehicle";
             fuelcapacity = Convert.ToDouble(constantsManager.FindConstantValue("engine_tank_capacity"));
             OnVehicleChanged?.Invoke(CurrentVehicle);
-        } 
+        }
 
         public void Update()
         {
@@ -204,7 +197,7 @@ namespace OmsiVisualInterfaceNet
         {
             bool doorOpen = GetDoorState(0) || GetDoorState(1) || GetDoorState(2);
             bool parkingBrake = CurrentVehicle?.GetVariable("Actia_DASH_Indic_parkingbrake")>0;
-            if (stopBrakeState == true || parkingBrake == true || (doorOpen==true && GetSpeed()<1))
+            if (stopBrakeState == true || parkingBrake == true || doorOpen==true && GetSpeed()<1)
                 return 1;
             return 0;
         }
@@ -285,7 +278,6 @@ namespace OmsiVisualInterfaceNet
 
             try
             {
-                // Map gear position to transmission variables
                 string gearVar = "antrieb_getr_gangwahl";
                 float gearVal;
 
@@ -323,7 +315,6 @@ namespace OmsiVisualInterfaceNet
         {
             CurrentVehicle?.SetVariable("cp_schluessel_rot", pos);
 
-            // If leaving low beam, turn off high beam but keep intent
             if (pos < 1)
             {
                 if (lastHighBeamState)
@@ -331,10 +322,8 @@ namespace OmsiVisualInterfaceNet
                     highBeamIntent = true;
                     SetHighBeam(false); 
                 }
-
             }
 
-            // If returning to low beam, restore high beam if intent is true
             if (pos > 0.5f)
             {
                 if (highBeamIntent)
@@ -358,7 +347,18 @@ namespace OmsiVisualInterfaceNet
                 lastHighBeamState = false;
             }
         }
-        public void SetHornState(bool on) => CurrentVehicle?.SetVariable("cockpit_horn", on ? 1 : 0);
+
+        public void SetBlinkers(bool left, bool right)
+        {
+            if(left && !right)
+                CurrentVehicle?.SetVariable("lights_sw_blinker", 1);
+            else if(!left && right)
+                CurrentVehicle?.SetVariable("lights_sw_blinker", 2);
+            else
+                CurrentVehicle?.SetVariable("lights_sw_blinker", 0);
+        }
+
+        public void SetHornState(bool on) => CurrentVehicle?.SetVariable("cockpit_hupe", on ? 1 : 0);
         public void SetWiper(string mode)
         {
             int val = mode == "INT" ? 3 : mode == "1" ? 4 : mode == "2" ? 5 : 6;
