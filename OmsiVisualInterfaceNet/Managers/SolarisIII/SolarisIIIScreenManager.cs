@@ -14,7 +14,6 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
         private readonly Dictionary<string, PictureBox> barPictureBoxes;
         private readonly Dictionary<string, PictureBox> doorPictureBoxes;
 
-
         private readonly SolarisIIIOmsiManager omsiManager;
         private readonly SerialManager serialManager;
 
@@ -23,6 +22,9 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
         private bool startupSequenceActive = true;
         private string projectRoot;
         private bool isStopModeActive = false;
+        private int currentDisplayMode = 1;
+        private float lastDisplayChangeover = 0f;
+        private bool isInTransition = false;
 
         private string lastFuelImage;
         private string lastAdBlueImage;
@@ -111,16 +113,16 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
 
         public void UpdateMainScreen()
         {
-            if (omsiManager.GetMainScreen() == 1)
-            {
-                UpdateScreenVisibility(1);
-                UpdateMainScreenIcons();
-            }
-            else
-            {
-                UpdateScreenVisibility(2);
+            int newMode = omsiManager.GetMainScreen();
 
+            if (newMode != currentDisplayMode)
+            {
+                isInTransition = true;
+                lastDisplayChangeover = 0f;
+                Debug.WriteLine($"Screen mode changed: {currentDisplayMode} -> {newMode}");
             }
+
+            UpdateScreenVisibility(newMode);
         }
 
         private void StartupTimerTicker_Tick(object? sender, EventArgs e)
@@ -136,8 +138,10 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             if (startupTimerSeconds >= 0 && startupTimerSeconds < 2)
             {
                 // During initial boot, show blank if power is off, logo if power is on
+                isInTransition = false; // Disable transition logic during startup
+                currentDisplayMode = 0; // Reset mode tracking
                 HideAllScreens();
-
+                
                 if (isPowerOn)
                 {
                     ShowLogoScreen();
@@ -148,6 +152,7 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
                 // After 2 seconds, if power is on show stop mode screen with door icons
                 if (isPowerOn)
                 {
+                    isInTransition = false; // Disable transition logic during startup
                     ShowStopModeScreen();
                     startupSequenceActive = false;
                 }
@@ -218,23 +223,87 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             }
         }
 
-        private void UpdateScreenVisibility(int currentMode)
+        private void UpdateScreenVisibility(int targetMode)
         {
-            
-            if (currentMode == 2)
+            // Skip transition logic during startup sequence
+            if (startupSequenceActive)
             {
-                isStopModeActive = true;
-                SetScreenImage(pb_background, GetCachedImage("vdo_display_stopmode") ?? blankImage);
-                HideBarIcons();
-                UpdateDoorIndicators();
+                if (targetMode == 1)
+                {
+                    isStopModeActive = false;
+                    SetScreenImage(pb_background, GetCachedImage("Actia_Type_2") ?? blankImage);
+                    UpdateMainScreenIcons();
+                    ShowBarIcons();
+                    HideDoorIndicators();
+                }
+                else if (targetMode == 2)
+                {
+                    isStopModeActive = true;
+                    SetScreenImage(pb_background, GetCachedImage("vdo_display_stopmode") ?? blankImage);
+                    HideBarIcons();
+                    UpdateDoorIndicators();
+                }
+                return;
             }
-            else
+
+            // Get the changeover progress
+            float changeover = 0f;
+            try
+            {
+                changeover = Convert.ToSingle(omsiManager.CurrentVehicle?.GetVariable("vdv_display_changeover") ?? 0f);
+            }
+            catch
+            {
+                changeover = 0f;
+            }
+
+            // Check if transition is complete
+            if (isInTransition && changeover >= 2f)
+            {
+                isInTransition = false;
+                currentDisplayMode = targetMode;
+            }
+
+            // During transition, show changeover screen
+            if (isInTransition && changeover < 0.5f)
+            {
+                ShowChangeoverScreen();
+                return;
+            }
+
+            // Otherwise show target screen
+            if (targetMode == 1)
             {
                 isStopModeActive = false;
                 SetScreenImage(pb_background, GetCachedImage("Actia_Type_2") ?? blankImage);
                 UpdateMainScreenIcons();
                 ShowBarIcons();
                 HideDoorIndicators();
+            }
+            else if (targetMode == 2)
+            {
+                isStopModeActive = true;
+                SetScreenImage(pb_background, GetCachedImage("vdo_display_stopmode") ?? blankImage);
+                HideBarIcons();
+                UpdateDoorIndicators();
+            }
+        }
+
+        private void ShowChangeoverScreen()
+        {
+            if (MainScreen.InvokeRequired)
+            {
+                MainScreen.Invoke(new Action(ShowChangeoverScreen));
+            }
+            else
+            {
+                var changeoverImage = GetCachedImage("Actia_Changeover");
+                SetScreenImage(pb_background, changeoverImage ?? blankImage);
+                MainScreen.BringToFront();
+                MainScreen.Visible = true;
+                HideBarIcons();
+                HideDoorIndicators();
+                isStopModeActive = false;
             }
         }
 
@@ -649,7 +718,7 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
         {
             try
             {
-                bool park = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("vdv_visible_kneel1"));
+                bool park = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("vdv_visible_p"));
                 bool halt = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("vdv_visible_stopbrake"));
 
                 string imageName = null;
