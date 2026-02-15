@@ -58,6 +58,8 @@
             pb_door1 = new PictureBox();
             pb_door2 = new PictureBox();
             pb_door3 = new PictureBox();
+            pb_kneel = new PictureBox();
+            pb_wheels = new PictureBox();
             MainScreen.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pb_background).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pb_dpf).BeginInit();
@@ -88,6 +90,8 @@
             ((System.ComponentModel.ISupportInitialize)pb_door1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pb_door2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pb_door3).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pb_kneel).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pb_wheels).BeginInit();
             SuspendLayout();
             // 
             // MainScreen
@@ -414,12 +418,36 @@
             pb_door3.TabIndex = 27;
             pb_door3.TabStop = false;
             // 
+            // pb_kneel
+            // 
+            pb_kneel.BackColor = Color.Transparent;
+            pb_kneel.Image = Properties.Resources.Actia_Icon_Retarder;
+            pb_kneel.Location = new Point(996, 323);
+            pb_kneel.Name = "pb_kneel";
+            pb_kneel.Size = new Size(402, 301);
+            pb_kneel.SizeMode = PictureBoxSizeMode.StretchImage;
+            pb_kneel.TabIndex = 28;
+            pb_kneel.TabStop = false;
+            // 
+            // pb_wheels
+            // 
+            pb_wheels.BackColor = Color.Transparent;
+            pb_wheels.Image = Properties.Resources.Actia_Icon_Retarder;
+            pb_wheels.Location = new Point(961, 333);
+            pb_wheels.Name = "pb_wheels";
+            pb_wheels.Size = new Size(402, 301);
+            pb_wheels.SizeMode = PictureBoxSizeMode.StretchImage;
+            pb_wheels.TabIndex = 29;
+            pb_wheels.TabStop = false;
+            // 
             // SolarisIII12MSobol
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
             ClientSize = new Size(1842, 808);
+            Controls.Add(pb_wheels);
+            Controls.Add(pb_kneel);
             Controls.Add(pb_door3);
             Controls.Add(pb_door2);
             Controls.Add(pb_door1);
@@ -481,6 +509,8 @@
             ((System.ComponentModel.ISupportInitialize)pb_door1).EndInit();
             ((System.ComponentModel.ISupportInitialize)pb_door2).EndInit();
             ((System.ComponentModel.ISupportInitialize)pb_door3).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pb_kneel).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pb_wheels).EndInit();
             ResumeLayout(false);
         }
 
@@ -516,5 +546,7 @@
         private PictureBox pb_door1;
         private PictureBox pb_door2;
         private PictureBox pb_door3;
+        private PictureBox pb_kneel;
+        private PictureBox pb_wheels;
     }
 }

@@ -6,9 +6,15 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
     {
         private readonly Panel MainScreen;
         private readonly Panel LogoScreen;
+        private readonly PictureBox pb_background;
+        private readonly PictureBox pb_logo;
 
         private readonly List<Panel> allScreens;
         private readonly Dictionary<string, PictureBox> iconPictureBoxes;
+        private readonly Dictionary<string, PictureBox> barPictureBoxes;
+        private readonly Dictionary<string, PictureBox> doorPictureBoxes;
+
+
         private readonly SolarisIIIOmsiManager omsiManager;
         private readonly SerialManager serialManager;
 
@@ -30,18 +36,26 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
         private string lastDoor1Image;
         private string lastDoor2Image;
         private string lastDoor3Image;
+        private string lastKneelImage;
+        private string lastWheelImage;
 
         private Image blankImage;
 
         private readonly Dictionary<string, Image> imageCache = new Dictionary<string, Image>();
 
-        public SolarisIIIScreenManager(Panel mainScreen, Panel logoScreen,
+        public SolarisIIIScreenManager(Panel mainScreen, Panel logoScreen, PictureBox pb_background, PictureBox pb_logo,
                             Dictionary<string, PictureBox> iconPictureBoxes,
+                            Dictionary<string, PictureBox> barPictureBoxes,
+                            Dictionary<string, PictureBox> doorPictureBoxes,
                             SolarisIIIOmsiManager omsiManager, SerialManager serialManager)
         {
             MainScreen = mainScreen;
             LogoScreen = logoScreen;
+            this.pb_background = pb_background;
+            this.pb_logo = pb_logo;
             this.iconPictureBoxes = iconPictureBoxes;
+            this.barPictureBoxes = barPictureBoxes;
+            this.doorPictureBoxes = doorPictureBoxes;
             this.omsiManager = omsiManager;
             this.serialManager = serialManager;
 
@@ -80,10 +94,8 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             Debug.WriteLine("Delay started");
             await Task.Delay(5000);
             Debug.WriteLine("Delay finished, returning to main screen");
-            if (omsiManager.GetMainScreen() == 1)
-                UpdateScreenVisibility(4.0);
-            else
-                UpdateScreenVisibility(1.0);
+            UpdateScreenVisibility(omsiManager.GetMainScreen());
+
         }
 
         public void RestartStartupSequence()
@@ -101,12 +113,13 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
         {
             if (omsiManager.GetMainScreen() == 1)
             {
-                UpdateScreenVisibility(4.0);
+                UpdateScreenVisibility(1);
+                UpdateMainScreenIcons();
             }
             else
             {
-                UpdateScreenVisibility(1.0);
-                UpdateMainScreenIcons();
+                UpdateScreenVisibility(2);
+
             }
         }
 
@@ -127,7 +140,7 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
 
                 if (isPowerOn)
                 {
-                    ShowScreen(LogoScreen);
+                    ShowLogoScreen();
                 }
             }
             else if (startupTimerSeconds >= 2 && startupTimerSeconds < 4)
@@ -158,62 +171,162 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
                 // Load and display the stop mode background image
                 HideAllScreens();
                 var stopModeImage = GetCachedImage("vdo_display_stopmode");
-                SetScreenImage(MainScreen, stopModeImage ?? blankImage);
+                SetScreenImage(pb_background, stopModeImage ?? blankImage);
                 MainScreen.BringToFront();
                 MainScreen.Visible = true;
-
+                HideBarIcons();
                 isStopModeActive = true;
                 UpdateDoorIndicators();
             }
         }
 
-        private void ShowMainModeScreen()
+        private void ShowLogoScreen()
         {
-            if (MainScreen.InvokeRequired)
+            if (LogoScreen.InvokeRequired)
             {
-                MainScreen.Invoke(new Action(ShowMainModeScreen));
+                LogoScreen.Invoke(new Action(ShowLogoScreen));
             }
             else
             {
-                // Load and display the main screen background image
-                var mainImage = GetCachedImage("Actia_Type_2");
-                SetScreenImage(MainScreen, mainImage ?? blankImage);
-                MainScreen.BringToFront();
-                MainScreen.Visible = true;
-
+                // Load and display the logo screen background image
+                var logoImage = GetCachedImage("startup02");
+                SetScreenImage(pb_logo, logoImage ?? blankImage);
+                LogoScreen.BringToFront();
+                LogoScreen.Visible = true;
                 isStopModeActive = false;
                 HideDoorIndicators();
+                HideBarIcons();
+                HideStatusIcons();
+
             }
         }
 
         public async void ChangeMode(bool up)
         {
-            var currentMode = allScreens.FirstOrDefault(x => x.Visible == true);
+            var currentMode = omsiManager.GetMainScreen();
 
-            if (currentMode == MainScreen)
+            if (currentMode == 1)
             {
-                UpdateScreenVisibility(2.1);
-                await ReturnToMainAfterDelay();
+                omsiManager.CurrentVehicle.SetVariable("vdv_display_mode", 2);
+
+                UpdateScreenVisibility(2);
             }
-            else if (currentMode == LogoScreen)
+            else if (currentMode == 2)
             {
-                UpdateScreenVisibility(1.0);
+                omsiManager.CurrentVehicle.SetVariable("vdv_display_mode", 1);
+                UpdateScreenVisibility(1);
             }
         }
 
-        private void UpdateScreenVisibility(double currentMode)
+        private void UpdateScreenVisibility(int currentMode)
         {
-            if (currentMode == 1.0)
-            {
-                isStopModeActive = false;
-                SetScreenImage(MainScreen, GetCachedImage("Actia_Type_2") ?? blankImage);
-                UpdateMainScreenIcons();
-            }
-            else if (currentMode == 2.1 || currentMode == 4.0)
+            
+            if (currentMode == 2)
             {
                 isStopModeActive = true;
-                SetScreenImage(MainScreen, GetCachedImage("vdo_display_stopmode") ?? blankImage);
+                SetScreenImage(pb_background, GetCachedImage("vdo_display_stopmode") ?? blankImage);
+                HideBarIcons();
                 UpdateDoorIndicators();
+            }
+            else
+            {
+                isStopModeActive = false;
+                SetScreenImage(pb_background, GetCachedImage("Actia_Type_2") ?? blankImage);
+                UpdateMainScreenIcons();
+                ShowBarIcons();
+                HideDoorIndicators();
+            }
+        }
+
+        private void ShowBarIcons()
+        {
+            // Reset bar image trackers
+            lastFuelImage = null;
+            lastAdBlueImage = null;
+            lastLuftTank1Image = null;
+            lastLuftTank2Image = null;
+            lastLuftBremse1Image = null;
+            lastLuftBremse2Image = null;
+            lastDpfImage = null;
+            lastTempImage = null;
+
+
+            string[] barIconNames = { "pb_fuel", "pb_adBlue", "pb_luftTank1", "pb_luftTank2",
+                                      "pb_luftBremse1", "pb_luftBremse2", "pb_dpf", "pb_temp" };
+
+            foreach (var name in barIconNames)
+            {
+                if (barPictureBoxes.TryGetValue(name, out var pb))
+                {
+                    if (pb != null)
+                    {
+                        if (pb.InvokeRequired)
+                        {
+                            pb.Invoke(new Action(() => pb.Visible = true));
+                        }
+                        else
+                        {
+                            pb.Visible = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void HideBarIcons()
+        {
+            // Reset bar image trackers
+            lastFuelImage = null;
+            lastAdBlueImage = null;
+            lastLuftTank1Image = null;
+            lastLuftTank2Image = null;
+            lastLuftBremse1Image = null;
+            lastLuftBremse2Image = null;
+            lastDpfImage = null;
+            lastTempImage = null;
+
+
+            string[] barIconNames = { "pb_fuel", "pb_adBlue", "pb_luftTank1", "pb_luftTank2",
+                                      "pb_luftBremse1", "pb_luftBremse2", "pb_dpf", "pb_temp" };
+
+            foreach (var name in barIconNames)
+            {
+                if (barPictureBoxes.TryGetValue(name, out var pb))
+                {
+                    if (pb != null)
+                    {
+                        if (pb.InvokeRequired)
+                        {
+                            pb.Invoke(new Action(() => pb.Visible = false));
+                        }
+                        else
+                        {
+                            pb.Visible = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void HideStatusIcons()
+        {
+            for (int i = 1; i <= 14; i++)
+            {
+                string iconName = $"pb_icon{i}";
+                if (iconPictureBoxes.TryGetValue(iconName, out var pb))
+                {
+                    if (pb != null)
+                    {
+                        if (pb.InvokeRequired)
+                        {
+                            pb.Invoke(new Action(() => pb.Image = null));
+                        }
+                        else
+                        {
+                            pb.Image = null;
+                        }
+                    }
+                }
             }
         }
 
@@ -225,50 +338,75 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             UpdateDoor1Indicator();
             UpdateDoor2Indicator();
             UpdateDoor3Indicator();
+            UpdateKneelIndicator();
+            UpdateWheelIndicator();
         }
 
         private void UpdateDoor0Indicator()
         {
             try
             {
-                bool door0_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_0")) > 0.3f;
-                bool door1_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_1")) > 0.3f;
                 bool door_nothahn = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Door_01_nothahn"));
-                bool door_nopress = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("door_nopress_state01"));
                 bool er4 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Er_4"));
                 bool er12 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Er_12"));
+                bool door_nopress = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("door_nopress_state01"));
+                int vis_dashboard_type = Convert.ToInt32(omsiManager.CurrentVehicle.GetVariable("vis_dashboard_type"));
 
                 string imageName = null;
 
-                if (door_nothahn || er4 || er12 || door_nopress)
+                // Check nothahn condition
+                if (door_nothahn || er4 || er12 || door_nopress || (vis_dashboard_type != 1 && vis_dashboard_type != 3 && vis_dashboard_type != 4))
                 {
                     imageName = "door0_nothahn";
                 }
                 else
                 {
-                    bool tuersperre = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("tuersperre")) < 0;
-                    bool light_timer1 = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("light_timer1")) > 1;
+                    float door0_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_0"));
+                    float door1_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_1"));
+                    float tuersperre = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("tuersperre"));
+                    float light_timer1 = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("light_timer1"));
                     bool cg_active = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("CG_active"));
+                    bool cg_active_front = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("CG_activeFrontDoor"));
+                    bool vis_cg_buttons_front = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("vis_CG_buttons_front"));
+                    int vis_cg_type = Convert.ToInt32(omsiManager.CurrentVehicle.GetVariable("vis_cg_type"));
 
-                    if (door0_open || door1_open)
+                    // Door is open if value > 0.3
+                    bool door0IsOpen = door0_open > 0.3f;
+                    bool door1IsOpen = door1_open > 0.3f;
+                    bool doorLocked = tuersperre < 0;
+                    bool lightActive = light_timer1 > 1;
+                    bool cgActive = (cg_active || cg_active_front) && vis_cg_buttons_front && vis_cg_type != 4;
+
+                    if (door0IsOpen)
                     {
-                        imageName = "door0_open";
+                        if (vis_dashboard_type == 1 || vis_dashboard_type == 4)
+                        {
+                            imageName = "door01_open";
+                        }
+                        else
+                        {
+                            imageName = "door0_open";
+                        }
                     }
-                    else if (tuersperre)
+                    else if (doorLocked && !door1IsOpen)
                     {
                         imageName = "door0_locked";
                     }
-                    else if (cg_active && light_timer1)
+                    else if (cgActive && (vis_dashboard_type == 1 || vis_dashboard_type == 4))
                     {
                         imageName = "door0_oncg";
                     }
-                    else if (!door0_open && !door1_open && light_timer1)
+                    else if (door0_open == 0 && door1_open == 0 && lightActive)
                     {
                         imageName = "door0_closed";
                     }
+                    else
+                    {
+                        imageName = "blank";
+                    }
                 }
 
-                if (imageName != lastDoor0Image && iconPictureBoxes.TryGetValue("pb_door0", out var pb))
+                if (imageName != lastDoor0Image && doorPictureBoxes.TryGetValue("pb_door0", out var pb))
                 {
                     lastDoor0Image = imageName;
                     UpdateDoorImage(pb, imageName);
@@ -284,44 +422,67 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
         {
             try
             {
-                bool door0_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_0")) > 0.3f;
-                bool door1_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_1")) > 0.3f;
                 bool door_nothahn = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Door_01_nothahn"));
-                bool door_nopress = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("door_nopress_state01"));
                 bool er4 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Er_4"));
                 bool er12 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Er_12"));
+                bool door_nopress = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("door_nopress_state01"));
+                int vis_dashboard_type = Convert.ToInt32(omsiManager.CurrentVehicle.GetVariable("vis_dashboard_type"));
 
                 string imageName = null;
 
-                if (door_nothahn || er4 || er12 || door_nopress)
+                // Check nothahn condition
+                if (door_nothahn || er4 || er12 || door_nopress || (vis_dashboard_type != 1 && vis_dashboard_type != 3 && vis_dashboard_type != 4))
                 {
                     imageName = "door1_nothahn";
                 }
                 else
                 {
-                    bool tuersperre = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("tuersperre")) < 0;
-                    bool light_timer1 = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("light_timer1")) > 1;
+                    float door0_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_0"));
+                    float door1_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_1"));
+                    float tuersperre = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("tuersperre"));
+                    float light_timer1 = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("light_timer1"));
                     bool cg_active = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("CG_active"));
+                    bool cg_active_front = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("CG_activeFrontDoor"));
+                    bool vis_cg_buttons_front = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("vis_CG_buttons_front"));
+                    int vis_cg_type = Convert.ToInt32(omsiManager.CurrentVehicle.GetVariable("vis_cg_type"));
 
-                    if (door0_open || door1_open)
+                    // Door is open if value > 0.3
+                    bool door0IsOpen = door0_open > 0.3f;
+                    bool door1IsOpen = door1_open > 0.3f;
+                    bool doorLocked = tuersperre < 0;
+                    bool lightActive = light_timer1 > 1;
+                    bool cgActive = (cg_active || cg_active_front) && vis_cg_buttons_front && vis_cg_type != 4;
+
+                    if ( door1IsOpen)
                     {
-                        imageName = "door1_open";
+                        if (vis_dashboard_type == 1 || vis_dashboard_type == 4)
+                        {
+                            imageName = "door01_open";
+                        }
+                        else
+                        {
+                            imageName = "door1_open";
+                        }
                     }
-                    else if (tuersperre && !door1_open)
+                    else if (doorLocked)
                     {
                         imageName = "door1_locked";
                     }
-                    else if (cg_active && light_timer1)
+                    else if (cgActive && (vis_dashboard_type == 1 || vis_dashboard_type == 4))
                     {
                         imageName = "door1_oncg";
                     }
-                    else if (!door0_open && !door1_open && light_timer1)
+                    else if (door0_open == 0 && door1_open == 0 && lightActive)
                     {
                         imageName = "door1_closed";
                     }
+                    else
+                    {
+                        imageName = "blank";
+                    }
                 }
 
-                if (imageName != lastDoor1Image && iconPictureBoxes.TryGetValue("pb_door1", out var pb))
+                if (imageName != lastDoor1Image && doorPictureBoxes.TryGetValue("pb_door1", out var pb))
                 {
                     lastDoor1Image = imageName;
                     UpdateDoorImage(pb, imageName);
@@ -337,39 +498,52 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
         {
             try
             {
-                bool door2_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_2")) > 0.3f;
-                bool door3_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_3")) > 0.3f;
                 bool door_nothahn = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Door_23_nothahn"));
-                bool door_nopress = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("door_nopress_state23"));
                 bool er4 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Er_4"));
                 bool er12 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Er_12"));
+                bool door_nopress = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("door_nopress_state23"));
+                int vis_dashboard_type = Convert.ToInt32(omsiManager.CurrentVehicle.GetVariable("vis_dashboard_type"));
 
                 string imageName = null;
 
-                if (door_nothahn || er4 || er12 || door_nopress)
+                // Check nothahn condition
+                if (door_nothahn || er4 || er12 || door_nopress || (vis_dashboard_type != 1 && vis_dashboard_type != 3 && vis_dashboard_type != 4))
                 {
                     imageName = "door2_nothahn";
                 }
                 else
                 {
-                    bool light_timer2 = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("light_timer2")) > 1;
+                    float door2_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_2"));
+                    float door3_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_3"));
+                    float light_timer2 = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("light_timer2"));
                     bool cg_active = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("CG_active"));
+                    bool cg_active_front = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("CG_activeFrontDoor"));
+                    int vis_cg_type = Convert.ToInt32(omsiManager.CurrentVehicle.GetVariable("vis_cg_type"));
 
-                    if (door2_open || door3_open)
+                    bool door2IsOpen = door2_open > 0.3f;
+                    bool door3IsOpen = door3_open > 0.3f;
+                    bool lightActive = light_timer2 > 1;
+                    bool cgActive = (cg_active || cg_active_front) && vis_cg_type != 4 && (vis_dashboard_type == 1 || vis_dashboard_type == 4);
+
+                    if (door2IsOpen || door3IsOpen)
                     {
                         imageName = "door2_open";
                     }
-                    else if (cg_active && light_timer2)
+                    else if (cgActive)
                     {
                         imageName = "door2_oncg";
                     }
-                    else if (!door2_open && !door3_open && light_timer2)
+                    else if (door2_open == 0 && door3_open == 0 && lightActive)
                     {
                         imageName = "door2_closed";
                     }
+                    else
+                    {
+                        imageName = "blank";
+                    }
                 }
 
-                if (imageName != lastDoor2Image && iconPictureBoxes.TryGetValue("pb_door2", out var pb))
+                if (imageName != lastDoor2Image && doorPictureBoxes.TryGetValue("pb_door2", out var pb))
                 {
                     lastDoor2Image = imageName;
                     UpdateDoorImage(pb, imageName);
@@ -385,39 +559,52 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
         {
             try
             {
-                bool door4_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_4")) > 0.3f;
-                bool door5_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_5")) > 0.3f;
                 bool door_nothahn = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Door_45_nothahn"));
-                bool door_nopress = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("door_nopress_state45"));
                 bool er4 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Er_4"));
                 bool er12 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("Er_12"));
+                bool door_nopress = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("door_nopress_state45"));
+                int vis_dashboard_type = Convert.ToInt32(omsiManager.CurrentVehicle.GetVariable("vis_dashboard_type"));
 
                 string imageName = null;
 
-                if (door_nothahn || er4 || er12 || door_nopress)
+                // Check nothahn condition
+                if (door_nothahn || er4 || er12 || door_nopress || (vis_dashboard_type != 1 && vis_dashboard_type != 3 && vis_dashboard_type != 4))
                 {
                     imageName = "door3_nothahn";
                 }
                 else
                 {
-                    bool light_timer3 = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("light_timer3")) > 1;
+                    float door4_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_4"));
+                    float door5_open = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("door_5"));
+                    float light_timer3 = Convert.ToSingle(omsiManager.CurrentVehicle.GetVariable("light_timer3"));
                     bool cg_active = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("CG_active"));
+                    bool cg_active_front = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("CG_activeFrontDoor"));
+                    int vis_cg_type = Convert.ToInt32(omsiManager.CurrentVehicle.GetVariable("vis_cg_type"));
 
-                    if (door4_open || door5_open)
+                    bool door4IsOpen = door4_open > 0.3f;
+                    bool door5IsOpen = door5_open > 0.3f;
+                    bool lightActive = light_timer3 > 1;
+                    bool cgActive = (cg_active || cg_active_front) && vis_cg_type != 4 && (vis_dashboard_type == 1 || vis_dashboard_type == 4);
+
+                    if (door4IsOpen || door5IsOpen)
                     {
                         imageName = "door3_open";
                     }
-                    else if (cg_active && light_timer3)
+                    else if (cgActive)
                     {
                         imageName = "door3_oncg";
                     }
-                    else if (!door4_open && !door5_open && light_timer3)
+                    else if (door4_open == 0 && door5_open == 0 && lightActive)
                     {
                         imageName = "door3_closed";
                     }
+                    else
+                    {
+                        imageName = "blank";
+                    }
                 }
 
-                if (imageName != lastDoor3Image && iconPictureBoxes.TryGetValue("pb_door3", out var pb))
+                if (imageName != lastDoor3Image && doorPictureBoxes.TryGetValue("pb_door3", out var pb))
                 {
                     lastDoor3Image = imageName;
                     UpdateDoorImage(pb, imageName);
@@ -429,21 +616,87 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             }
         }
 
+        private void UpdateKneelIndicator()
+        {
+            try
+            {
+                bool kneel1 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("vdv_visible_kneel1"));
+                bool kneel2 = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("vdv_visible_kneel2"));
+                string imageName = null;
+
+                if (kneel1)
+                {
+                    imageName = "kneel0";
+                }
+                else if (kneel2)
+                {
+                    imageName = "kneel1";
+                }
+
+                if (imageName != lastKneelImage && doorPictureBoxes.TryGetValue("pb_kneel", out var pb))
+                {
+                    lastKneelImage = imageName;
+                    UpdateDoorImage(pb, imageName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating indicator: {ex.Message}");
+            }
+        }
+
+        private void UpdateWheelIndicator()
+        {
+            try
+            {
+                bool park = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("vdv_visible_kneel1"));
+                bool halt = Convert.ToBoolean(omsiManager.CurrentVehicle.GetVariable("vdv_visible_stopbrake"));
+
+                string imageName = null;
+
+                if (park)
+                {
+                    imageName = "brake_park";
+                }
+                else if (halt)
+                {
+                    imageName = "brake_halt";
+                }
+
+                if (imageName != lastWheelImage && doorPictureBoxes.TryGetValue("pb_wheels", out var pb))
+                {
+                    lastWheelImage = imageName;
+                    UpdateDoorImage(pb, imageName);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating indicator: {ex.Message}");
+            }
+        }
+
+
         private void HideDoorIndicators()
         {
             lastDoor0Image = null;
             lastDoor1Image = null;
             lastDoor2Image = null;
             lastDoor3Image = null;
+            lastKneelImage = null;
+            lastWheelImage = null;
 
-            if (iconPictureBoxes.TryGetValue("pb_door0", out var pb0))
+            if (doorPictureBoxes.TryGetValue("pb_door0", out var pb0))
                 UpdateDoorImage(pb0, null);
-            if (iconPictureBoxes.TryGetValue("pb_door1", out var pb1))
+            if (doorPictureBoxes.TryGetValue("pb_door1", out var pb1))
                 UpdateDoorImage(pb1, null);
-            if (iconPictureBoxes.TryGetValue("pb_door2", out var pb2))
+            if (doorPictureBoxes.TryGetValue("pb_door2", out var pb2))
                 UpdateDoorImage(pb2, null);
-            if (iconPictureBoxes.TryGetValue("pb_door3", out var pb3))
+            if (doorPictureBoxes.TryGetValue("pb_door3", out var pb3))
                 UpdateDoorImage(pb3, null);
+            if (doorPictureBoxes.TryGetValue("pb_kneel", out var pb4))
+                UpdateDoorImage(pb4, null);
+            if (doorPictureBoxes.TryGetValue("pb_wheels", out var pb5))
+                UpdateDoorImage(pb5, null);
         }
 
         public void UpdateDoorImage(PictureBox pb, string imageName)
@@ -454,11 +707,11 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             {
                 if (pb.InvokeRequired)
                 {
-                    pb.Invoke(new Action(() => pb.Image = blankImage));
+                    pb.Invoke(new Action(() => pb.Image = null));
                 }
                 else
                 {
-                    pb.Image = blankImage;
+                    pb.Image = null;
                 }
                 return;
             }
@@ -468,13 +721,13 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
                 pb.Invoke(new Action(() =>
                 {
                     var img = GetCachedImage(imageName);
-                    pb.Image = img ?? blankImage;
+                    pb.Image = img;
                 }));
             }
             else
             {
                 var img = GetCachedImage(imageName);
-                pb.Image = img ?? blankImage;
+                pb.Image = img;
             }
         }
 
@@ -1075,7 +1328,7 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             }
             else
             {
-                pb.Image = blankImage;
+                pb.Image = null;
             }
         }
 
@@ -1340,11 +1593,11 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             {
                 if (pb.InvokeRequired)
                 {
-                    pb.Invoke(new Action(() => pb.Image = visible ? pb.Image : blankImage));
+                    pb.Invoke(new Action(() => pb.Image = visible ? pb.Image : null));
                 }
                 else
                 {
-                    pb.Image = visible ? pb.Image : blankImage;
+                    pb.Image = visible ? pb.Image : null;
                 }
             }
         }
@@ -1366,34 +1619,17 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             }
         }
 
-        private void MakeScreenVisible(Panel screen)
+        private void SetScreenImage(PictureBox picBox, Image image)
         {
-            foreach (var s in allScreens)
+            try
             {
-                if (s.InvokeRequired)
-                {
-                    s.Invoke(new Action(() => s.Visible = false));
-                }
-                else
-                {
-                    s.Visible = false;
-                }
+                picBox.Image = image;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to set screen image: {ex.Message} {picBox.Name} {image}");
             }
 
-            if (screen.InvokeRequired)
-            {
-                screen.Invoke(new Action(() => screen.Visible = true));
-            }
-            else
-            {
-                screen.Visible = true;
-            }
-        }
-
-        private void SetScreenImage(Panel panel, Image image)
-        {
-            panel.BackgroundImage = image;
-            panel.BackgroundImageLayout = ImageLayout.Stretch;
         }
 
         private string FindProjectRoot()
@@ -1416,8 +1652,11 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
 
         public void HideAllScreens()
         {
-            SetScreenImage(MainScreen, blankImage);
-            SetScreenImage(LogoScreen, blankImage);
+            HideBarIcons();
+            HideDoorIndicators();
+            HideStatusIcons();
+            SetScreenImage(pb_background, blankImage);
+            SetScreenImage(pb_logo, blankImage);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using OmsiHook;
 
+using System.Diagnostics;
+
 namespace OmsiVisualInterfaceNet.Managers.SolarisIII
 {
     public class SolarisIIIOmsiManager : IDisposable, IOmsiManager
@@ -309,11 +311,10 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
 
         public int GetMainScreen()
         {
-            bool doorOpen = GetDoorState(0) || GetDoorState(1) || GetDoorState(2);
-            bool parkingBrake = ReadDouble("indic_nur_bremsdruck") > 0;
-            if (stopBrakeState == true || parkingBrake == true || (doorOpen == true && GetSpeed() < 1))
-                return 1;
-            return 0;
+            var page = Convert.ToInt32(CurrentVehicle.GetVariable("vdv_display_mode"));
+            Debug.WriteLine("PAGE" + page);
+
+            return page;
         }
         public int GetGearState() => CurrentVehicle == null ? 0 :
             ReadBool("cockpit_gangR") ? -1 :

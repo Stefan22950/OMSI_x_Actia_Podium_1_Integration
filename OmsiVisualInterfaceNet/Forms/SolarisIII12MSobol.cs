@@ -65,12 +65,37 @@ namespace OmsiVisualInterfaceNet.Forms
                 { "pb_icon4", pb_icon4 }
             };
 
+            var barPictureBoxes = new Dictionary<string, PictureBox>
+            {
+                { "pb_luft_tank1", pb_luft_tank1 },
+                { "pb_luft_tank2", pb_luft_tank2 },
+                { "pb_luft_brems1", pb_luft_brems1 },
+                { "pb_luft_brems2", pb_luft_brems2 },
+                { "pb_dpf", pb_dpf },
+                { "pb_temp", pb_temp },
+                { "pb_fuel", pb_fuel },
+                { "pb_adBlue", pb_adBlue }
+            };
+
+            var doorPictureBoxes = new Dictionary<string, PictureBox>
+            {
+                { "pb_door0", pb_door0 },
+                { "pb_door1", pb_door1 },
+                { "pb_door2", pb_door2 },
+                { "pb_door3", pb_door3 },
+                { "pb_kneel", pb_kneel },
+                { "pb_wheels", pb_wheels }
+            };
 
             // Solaris form only has a single main panel in Designer. Pass the same panel as stop/main/logo.
             screenManager = new SolarisIIIScreenManager(
-                MainScreen, // mainScreen
-                LogoScreen, // logoScreen
+                MainScreen, 
+                LogoScreen, 
+                pb_background,
+                pb_logo,
                 iconPictureBoxes,
+                barPictureBoxes,
+                doorPictureBoxes,
                 omsiManager,
                 serialManager);
 
@@ -122,16 +147,6 @@ namespace OmsiVisualInterfaceNet.Forms
             MainScreen.Location = new Point(0, 0);
             LogoScreen.Location = new Point(0, 0);
             pb_logo.Location = new Point(0, 0);
-
-            pb_fuel.Parent = pb_background;
-            pb_adBlue.Parent = pb_fuel;
-            pb_luft_tank2.Parent = pb_adBlue;
-            pb_luft_tank1.Parent = pb_luft_tank2;
-            pb_luft_brems1.Parent = pb_luft_tank1;
-            pb_luft_brems2.Parent = pb_luft_brems1;
-            pb_dpf.Parent = pb_luft_brems2;
-            pb_temp.Parent = pb_dpf;
-
             pb_fuel.Location = new Point(0, 0);
             pb_adBlue.Location = new Point(0, 0);
             pb_luft_tank2.Location = new Point(0, 0);
@@ -154,21 +169,43 @@ namespace OmsiVisualInterfaceNet.Forms
             pb_icon1.Location = new Point(0, 0);
             pb_icon5.Location = new Point(0, 0);
             pb_icon6.Location = new Point(0, 0);
+            pb_door0.Location = new Point(0, 0);
+            pb_door1.Location = new Point(0, 0);
+            pb_door2.Location = new Point(0, 0);
+            pb_door3.Location = new Point(0, 0);
+            pb_kneel.Location = new Point(0, 0);
+            pb_wheels.Location = new Point(0, 0);
 
-            pb_icon4.Parent = pb_temp;
-            pb_icon11.Parent = pb_icon4;
-            pb_icon13.Parent = pb_icon11;
-            pb_icon12.Parent = pb_icon13;
-            pb_icon8.Parent = pb_icon12;
-            pb_icon10.Parent = pb_icon8;
-            pb_icon9.Parent = pb_icon10;
-            pb_icon3.Parent = pb_icon9;
-            pb_icon7.Parent = pb_icon3;
-            pb_icon2.Parent = pb_icon7;
-            pb_icon14.Parent = pb_icon2;
-            pb_icon1.Parent = pb_icon14;
-            pb_icon5.Parent = pb_icon1;
+
+            pb_door0.Parent = pb_background;
+            pb_door1.Parent = pb_door0;
+            pb_door2.Parent = pb_door1;
+            pb_door3.Parent = pb_door2;
+            pb_kneel.Parent = pb_door3;
+            pb_wheels.Parent = pb_kneel;
+            pb_icon1.Parent = pb_wheels;
+            pb_icon2.Parent = pb_icon1;
+            pb_icon3.Parent = pb_icon2;
+            pb_icon4.Parent = pb_icon3;
+            pb_icon5.Parent = pb_icon4;
             pb_icon6.Parent = pb_icon5;
+            pb_icon7.Parent = pb_icon6;
+            pb_icon8.Parent = pb_icon7;
+            pb_icon9.Parent = pb_icon8;
+            pb_icon10.Parent = pb_icon9;
+            pb_icon11.Parent = pb_icon10;
+            pb_icon12.Parent = pb_icon11;
+            pb_icon13.Parent = pb_icon12;
+            pb_icon14.Parent = pb_icon13;
+
+            pb_fuel.Parent = pb_icon14;
+            pb_adBlue.Parent = pb_fuel;
+            pb_luft_tank2.Parent = pb_adBlue;
+            pb_luft_tank1.Parent = pb_luft_tank2;
+            pb_luft_brems1.Parent = pb_luft_tank1;
+            pb_luft_brems2.Parent = pb_luft_brems1;
+            pb_dpf.Parent = pb_luft_brems2;
+            pb_temp.Parent = pb_dpf;
 
             //screenManager.HideAllScreens();
             this.TopMost = true;

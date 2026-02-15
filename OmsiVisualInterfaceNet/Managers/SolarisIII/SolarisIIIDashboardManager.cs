@@ -39,6 +39,7 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
         private int lastGearState = 0;
         private bool lastCheckEngineWarningState;
         private bool lastParkingBrakeState;
+        private bool lastErrorBrakeState;
         private bool lastAbsWarningState;
         private bool lastDiagWarningState;
         private bool lastbusStopState;
@@ -101,6 +102,7 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             lastHazardsLightState = false;
             lastCheckEngineWarningState = false;
             lastParkingBrakeState = false;
+            lastErrorBrakeState = false;
             lastAbsWarningState = false;
             lastDiagWarningState = false;
             lastbusStopState = false;
@@ -137,23 +139,31 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
 
         public void UpdateCritical()
         {
-            UpdateSpeedometer(omsiManager.GetSpeed());
-            UpdateTachometer(omsiManager.GetRPM());
+            if(omsiManager.GetElectricState())
+            {
+                UpdateSpeedometer(omsiManager.GetSpeed());
+                UpdateTachometer(omsiManager.GetRPM());
+            }
         }
 
         public void UpdateNonCritical()
         {
             UpdatePowerState(omsiManager.GetElectricState());
-            UpdateBlinkerState();
-            UpdateHazardLights();
-            UpdateClusterLights();
-            UpdateFuel();
-            UpdatePressures();
-            UpdateDpf();
-            UpdateTemp();
-            omsiManager.Update();
-            form.TopMost = true;
-            screenManager.UpdateMainScreenIcons();
+            if (omsiManager.GetElectricState())
+            {
+                UpdateBlinkerState();
+                UpdateHazardLights();
+                UpdateClusterLights();
+                UpdateFuel();
+                UpdatePressures();
+                UpdateDpf();
+                UpdateTemp();
+                omsiManager.Update();
+                form.TopMost = true;
+                screenManager.UpdateMainScreen();
+                screenManager.UpdateMainScreenIcons();
+            }
+            
         }
 
         private void UpdatePowerState(bool elecStatus)
@@ -235,7 +245,7 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             int currentBlinker = omsiManager.GetBlinkerState();
             if (currentBlinker != lastBlinkerState)
             {
-                if (currentBlinker == -1)
+                if (currentBlinker == 1)
                 {
                     serialManager.WriteLine("LEFT_BLINKER_LIGHT_ON");
                     serialManager.WriteLine("RIGHT_BLINKER_LIGHT_OFF");
@@ -245,7 +255,7 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
                     serialManager.WriteLine("LEFT_BLINKER_LIGHT_OFF");
                     serialManager.WriteLine("RIGHT_BLINKER_LIGHT_OFF");
                 }
-                else if (currentBlinker == 1)
+                else if (currentBlinker == 2)
                 {
                     serialManager.WriteLine("LEFT_BLINKER_LIGHT_OFF");
                     serialManager.WriteLine("RIGHT_BLINKER_LIGHT_ON");
@@ -305,12 +315,20 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
                 lastCheckEngineWarningState = checkEngineWarning;
             }
 
-            bool parkingBrake = omsiManager.CurrentVehicle.GetVariable("indic_nur_bremsdruck") > 0;
+            bool parkingBrake = omsiManager.CurrentVehicle.GetVariable("indic_parkbremse") > 0;
             if (parkingBrake != lastParkingBrakeState)
             {
                 serialManager.WriteLine($"PARKING_BRAKE_LIGHT_{(parkingBrake ? "ON" : "OFF")}");
                 screenManager.UpdateMainScreen();
                 lastParkingBrakeState = parkingBrake;
+            }
+
+            bool errorBrake = omsiManager.CurrentVehicle.GetVariable("indic_nur_bremsdruck") > 0;
+            if (errorBrake != lastErrorBrakeState)
+            {
+                serialManager.WriteLine($"BRAKE_ERROR_LIGHT_{(errorBrake ? "ON" : "OFF")}");
+                screenManager.UpdateMainScreen();
+                lastErrorBrakeState = errorBrake;
             }
 
             bool absWarning = omsiManager.CurrentVehicle.GetVariable("indic_ABS_ASR") > 0;
@@ -531,14 +549,14 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
                     screenManager.UpdateMainScreen();
                     break;
                 // Actia display controls
-                /*case "SCREEN_UP_PRESSED":
+                case "SCREEN_UP_PRESSED":
                     omsiManager.SetActiaScreenUp(true);
                     screenManager.ChangeMode(true);
                     break;
                 case "SCREEN_DOWN_PRESSED":
                     omsiManager.SetActiaScreenDown(true);
                     screenManager.ChangeMode(false);
-                    break;*/
+                    break;
 
                 // Interior lights
                 case "DRIVER_LIGHT_BTN_ON":
@@ -568,6 +586,7 @@ namespace OmsiVisualInterfaceNet.Managers.SolarisIII
             lastGearState = 0;
             lastCheckEngineWarningState = false;
             lastParkingBrakeState = false;
+            lastErrorBrakeState = false;
             lastAbsWarningState = false;
             lastDiagWarningState = false;
             lastbusStopState = false;
